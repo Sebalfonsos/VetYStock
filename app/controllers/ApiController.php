@@ -6,12 +6,7 @@ class ApiController extends Controller
     {
         header('Content-Type: application/json; charset=utf-8');
 
-        $items = Database::pdo()->query('
-            SELECT products.*, categories.name AS category_name
-            FROM products
-            INNER JOIN categories ON categories.id = products.category_id
-            ORDER BY categories.name ASC, products.name ASC
-        ')->fetchAll();
+        $items = (new CatalogService())->products();
 
         echo json_encode([
             'success' => true,
