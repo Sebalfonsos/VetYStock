@@ -80,6 +80,22 @@ function Get-ListeningProcess {
     return [int]$connection.OwningProcess
 }
 
+function Stop-ProcessTree {
+    param([int]$ProcessId)
+
+    try {
+        Stop-Process -Id $ProcessId -Force -ErrorAction Stop
+        return $true
+    } catch {
+        try {
+            & taskkill /PID $ProcessId /T /F | Out-Null
+            return $LASTEXITCODE -eq 0
+        } catch {
+            return $false
+        }
+    }
+}
+
 $selectedServices = Get-RequestedServices -Names $Services
 $registry = Read-Registry
 $remaining = @()
@@ -93,11 +109,17 @@ foreach ($entry in $registry) {
     }
 
     $handledByName += $entry.name
-    try {
-        Stop-Process -Id [int]$entry.pid -Force -ErrorAction Stop
+    $stopped = Stop-ProcessTree -ProcessId ([int]$entry.pid)
+    if ($stopped) {
         Write-Host "Stopped $($entry.name) (PID $($entry.pid))"
-    } catch {
-        Write-Host "No se pudo detener $($entry.name) (PID $($entry.pid))."
+    } else {
+        $portPid = Get-ListeningProcess -Port ([int]$entry.port)
+        if ($null -ne $portPid -and (Stop-ProcessTree -ProcessId $portPid)) {
+            Write-Host "Stopped $($entry.name) by port $($entry.port) (PID $portPid)"
+        } else {
+            Write-Host "No se pudo detener $($entry.name) (PID $($entry.pid))."
+            $remaining += $entry
+        }
     }
 }
 
@@ -112,7 +134,10 @@ foreach ($service in $selectedServices) {
     }
 
     try {
-        Stop-Process -Id $procId -Force -ErrorAction Stop
+        $stopped = Stop-ProcessTree -ProcessId $procId
+        if (-not $stopped) {
+            throw "No se pudo detener el proceso"
+        }
         Write-Host "Stopped $($service.Name) by port $($service.Port) (PID $procId)"
     } catch {
         Write-Host "No se pudo detener $($service.Name) por el puerto $($service.Port)."
