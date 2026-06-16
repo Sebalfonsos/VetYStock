@@ -107,6 +107,14 @@ El proyecto ya queda preparado para ejecutar estos 4 servicios independientes:
 - Listar animales:
   - `GET http://localhost:8104/?route=animals`
 
+### Cómo demostrar que el proyecto principal usa microservicios
+
+- Abrir `http://localhost:8000/index.php?route=home/index`
+- Abrir `http://localhost:8000/index.php?route=dashboard/index` después de iniciar sesión
+- Verás que esas pantallas leen datos desde los servicios `auth`, `catalog`, `inventory` y `animals`
+- Si detienes un servicio, su bloque de datos baja a `0` o devuelve error controlado
+- También puedes abrir DevTools y ver las llamadas HTTP a `8101`, `8102`, `8103` y `8104`
+
 ## Flujo Git sugerido
 
 - `main`
