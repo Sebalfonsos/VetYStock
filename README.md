@@ -78,6 +78,12 @@ El proyecto ya queda preparado para ejecutar estos 4 servicios independientes:
    ```powershell
    .\scripts\start-microservices.ps1
    ```
+   O por separado:
+   ```powershell
+   .\scripts\start-microservices.ps1 -Services auth, catalog
+   .\scripts\start-microservices.ps1 -Services main
+   .\scripts\start-microservices.ps1 -Services inventory -Force
+   ```
 3. Abrir cada servicio en su puerto:
    - Proyecto principal: `http://localhost:8000/index.php?route=auth/login`
    - Auth: `http://localhost:8101/?route=health`
@@ -87,6 +93,11 @@ El proyecto ya queda preparado para ejecutar estos 4 servicios independientes:
 4. Para detener todo:
    ```powershell
    .\scripts\stop-microservices.ps1
+   ```
+   O por partes:
+   ```powershell
+   .\scripts\stop-microservices.ps1 -Services auth
+   .\scripts\stop-microservices.ps1 -Services main, inventory
    ```
 
 ### Rutas principales
