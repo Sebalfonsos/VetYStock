@@ -3,50 +3,54 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__, 3);
+require_once $root . '/app/services/ServiceRuntime.php';
+ServiceRuntime::bootstrap();
 
-require_once $root . '/app/helpers/functions.php';
+$service = new CatalogService();
+$route = ServiceRuntime::route();
+$method = ServiceRuntime::method();
+$body = ServiceRuntime::body();
 
-spl_autoload_register(function (string $class) use ($root): void {
-    $paths = [
-        $root . '/app/core/' . $class . '.php',
-        $root . '/app/models/' . $class . '.php',
-        $root . '/app/services/' . $class . '.php',
-    ];
-
-    foreach ($paths as $path) {
-        if (file_exists($path)) {
-            require_once $path;
-            return;
-        }
-    }
-});
-
-$route = trim((string) ($_GET['route'] ?? 'health'), '/');
-
-header('Content-Type: application/json; charset=utf-8');
+[$resource, $id] = array_pad(explode('/', $route, 2), 2, null);
+$id = $id !== null && $id !== '' ? (int) $id : null;
 
 if ($route === 'health') {
-    echo json_encode([
-        'success' => true,
-        'service' => 'catalog',
-        'status' => 'ok',
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
-    exit;
+    ServiceRuntime::json(['success' => true, 'service' => 'catalog', 'status' => 'ok']);
 }
 
-if ($route === 'products') {
-    $items = (new CatalogService())->products();
-
-    echo json_encode([
-        'success' => true,
-        'count' => count($items),
-        'data' => $items,
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
-    exit;
+if ($method === 'GET' && $resource === 'categories') {
+    ServiceRuntime::json(['success' => true, 'data' => $service->categories()]);
 }
 
-http_response_code(404);
-echo json_encode([
+if ($method === 'POST' && $resource === 'categories') {
+    ServiceRuntime::json($service->createCategory($body), 201);
+}
+
+if ($method === 'PUT' && $resource === 'categories' && $id !== null) {
+    ServiceRuntime::json($service->updateCategory($id, $body));
+}
+
+if ($method === 'DELETE' && $resource === 'categories' && $id !== null) {
+    ServiceRuntime::json($service->deleteCategory($id));
+}
+
+if ($method === 'GET' && $resource === 'products') {
+    ServiceRuntime::json($service->publicCatalog());
+}
+
+if ($method === 'POST' && $resource === 'products') {
+    ServiceRuntime::json($service->createProduct($body), 201);
+}
+
+if ($method === 'PUT' && $resource === 'products' && $id !== null) {
+    ServiceRuntime::json($service->updateProduct($id, $body));
+}
+
+if ($method === 'DELETE' && $resource === 'products' && $id !== null) {
+    ServiceRuntime::json($service->deleteProduct($id));
+}
+
+ServiceRuntime::json([
     'success' => false,
     'message' => 'Ruta no encontrada',
-], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+], 404);
