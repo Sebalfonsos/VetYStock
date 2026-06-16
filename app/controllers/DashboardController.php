@@ -6,29 +6,30 @@ class DashboardController extends Controller
     {
         AuthMiddleware::handle();
 
-        $userModel = new User();
-        $roleModel = new Role();
-        $categoryModel = new Category();
-        $productModel = new Product();
-        $animalModel = new Animal();
-        $treatmentModel = new Treatment();
-        $vaccineModel = new Vaccine();
+        $client = new MicroserviceClient();
+        $token = Auth::token();
+        $usersResponse = $client->get('auth', 'users');
+        $rolesResponse = $client->get('auth', 'roles');
+        $categoriesResponse = $client->get('catalog', 'categories');
+        $productsResponse = $client->get('catalog', 'products');
+        $animalsResponse = $client->get('animals', 'animals');
+        $inventoryMovementsResponse = $client->get('inventory', 'movements', $token);
+        $inventoryAlertsResponse = $client->get('inventory', 'alerts', $token);
 
-        $recentAnimals = $animalModel->allWithRelations();
         $dashboardCards = [
-            ['label' => 'Usuarios', 'value' => $userModel->count(), 'icon' => 'bi-people', 'color' => 'primary'],
-            ['label' => 'Roles', 'value' => $roleModel->count(), 'icon' => 'bi-shield-lock', 'color' => 'dark'],
-            ['label' => 'Categorías', 'value' => $categoryModel->count(), 'icon' => 'bi-tags', 'color' => 'success'],
-            ['label' => 'Productos', 'value' => $productModel->count(), 'icon' => 'bi-box-seam', 'color' => 'warning'],
-            ['label' => 'Animales', 'value' => $animalModel->count(), 'icon' => 'bi-heart-pulse', 'color' => 'danger'],
-            ['label' => 'Tratamientos', 'value' => $treatmentModel->count(), 'icon' => 'bi-journal-medical', 'color' => 'info'],
-            ['label' => 'Vacunas', 'value' => $vaccineModel->count(), 'icon' => 'bi-virus', 'color' => 'secondary'],
+            ['label' => 'Usuarios', 'value' => count($usersResponse['data'] ?? []), 'icon' => 'bi-people', 'color' => 'primary'],
+            ['label' => 'Roles', 'value' => count($rolesResponse['data'] ?? []), 'icon' => 'bi-shield-lock', 'color' => 'dark'],
+            ['label' => 'Categorías', 'value' => count($categoriesResponse['data'] ?? []), 'icon' => 'bi-tags', 'color' => 'success'],
+            ['label' => 'Productos', 'value' => count($productsResponse['data'] ?? []), 'icon' => 'bi-box-seam', 'color' => 'warning'],
+            ['label' => 'Animales', 'value' => count($animalsResponse['data'] ?? []), 'icon' => 'bi-heart-pulse', 'color' => 'danger'],
+            ['label' => 'Movimientos', 'value' => count($inventoryMovementsResponse['data'] ?? []), 'icon' => 'bi-journal-medical', 'color' => 'info'],
+            ['label' => 'Alertas', 'value' => count($inventoryAlertsResponse['data'] ?? []), 'icon' => 'bi-exclamation-triangle', 'color' => 'secondary'],
         ];
 
         $this->render('dashboard/index', [
             'title' => 'Dashboard',
             'cards' => $dashboardCards,
-            'recentAnimals' => array_slice($recentAnimals, 0, 5),
+            'recentAnimals' => array_slice($animalsResponse['data'] ?? [], 0, 5),
         ]);
     }
 }

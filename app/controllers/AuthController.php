@@ -22,25 +22,20 @@ class AuthController extends Controller
 
         $email = trim((string) ($_POST['email'] ?? ''));
         $password = trim((string) ($_POST['password'] ?? ''));
-        $user = (new User())->authenticate($email, $password);
+        $response = (new MicroserviceClient())->post('auth', 'login', [
+            'email' => $email,
+            'password' => $password,
+        ]);
 
-        if (!$user) {
-            Session::setFlash('error', 'Credenciales incorrectas.');
+        if (!($response['success'] ?? false)) {
+            Session::setFlash('error', $response['message'] ?? 'Credenciales incorrectas.');
             redirect('auth/login');
         }
 
-        (new User())->update((int) $user['id'], [
-            'role_id' => $user['role_id'],
-            'name' => $user['name'],
-            'email' => $user['email'],
-            'password_hash' => $user['password_hash'],
-            'status' => $user['status'],
-            'last_login_at' => date('Y-m-d H:i:s'),
-        ]);
-
+        $user = $response['data']['user'] ?? [];
         Auth::login($user);
-        Logger::audit('login', 'auth', $user['id'], ['email' => $email]);
-        Session::setFlash('success', 'Bienvenido, ' . $user['name'] . '.');
+        Auth::setToken($response['data']['token'] ?? null);
+        Session::setFlash('success', 'Bienvenido, ' . ($user['name'] ?? 'usuario') . '.');
         redirect('dashboard/index');
     }
 

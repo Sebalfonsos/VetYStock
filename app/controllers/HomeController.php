@@ -4,24 +4,33 @@ class HomeController extends Controller
 {
     public function index(): void
     {
+        $catalogClient = new MicroserviceClient();
+        $categoriesResponse = $catalogClient->get('catalog', 'categories');
+        $productsResponse = $catalogClient->get('catalog', 'products');
+        $authClient = new MicroserviceClient();
+        $animalsClient = new MicroserviceClient();
+        $usersResponse = $authClient->get('auth', 'users');
+        $animalsResponse = $animalsClient->get('animals', 'animals');
+
         $this->render('home/index', [
             'title' => 'Inicio',
-            'categories' => (new Category())->where('status', 'active', 'name ASC'),
-            'products' => (new Product())->publicCatalog(),
+            'categories' => $categoriesResponse['data'] ?? [],
+            'products' => $productsResponse['data'] ?? [],
             'heroStats' => [
-                ['label' => 'Categorías', 'value' => (new Category())->count()],
-                ['label' => 'Productos', 'value' => (new Product())->count()],
-                ['label' => 'Mascotas atendidas', 'value' => (new Animal())->count()],
-                ['label' => 'Historiales', 'value' => (new Treatment())->count() + (new Vaccine())->count()],
+                ['label' => 'Categorías', 'value' => count($categoriesResponse['data'] ?? [])],
+                ['label' => 'Productos', 'value' => count($productsResponse['data'] ?? [])],
+                ['label' => 'Usuarios', 'value' => count($usersResponse['data'] ?? [])],
+                ['label' => 'Mascotas', 'value' => count($animalsResponse['data'] ?? [])],
             ],
         ]);
     }
 
     public function catalog(): void
     {
+        $productsResponse = (new MicroserviceClient())->get('catalog', 'products');
         $this->render('home/catalog', [
             'title' => 'Tienda',
-            'products' => (new Product())->publicCatalog(),
+            'products' => $productsResponse['data'] ?? [],
         ]);
     }
 
