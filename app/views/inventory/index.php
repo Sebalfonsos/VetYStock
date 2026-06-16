@@ -3,6 +3,11 @@
         <div class="card content-card">
             <div class="card-body">
                 <h3 class="h5">Nuevo movimiento</h3>
+                <?php if (!empty($serviceError)): ?>
+                    <div class="alert alert-warning">
+                        <?= e($serviceError) ?>
+                    </div>
+                <?php endif; ?>
                 <form method="post" action="<?= e(url('inventory/store')) ?>">
                     <input type="hidden" name="_token" value="<?= e(Csrf::token()) ?>">
                     <div class="mb-3">
@@ -10,7 +15,7 @@
                         <select name="product_id" class="form-select" required>
                             <option value="">Seleccione</option>
                             <?php foreach ($products as $product): ?>
-                                <option value="<?= e($product['id']) ?>"><?= e($product['name']) ?> (Stock: <?= e($product['current_stock']) ?>)</option>
+                                <option value="<?= e($product['id']) ?>"><?= e($product['name']) ?> (Stock: <?= e($product['current_stock'] ?? '-') ?>)</option>
                             <?php endforeach; ?>
                         </select>
                     </div>
