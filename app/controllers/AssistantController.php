@@ -4,18 +4,12 @@ class AssistantController extends Controller
 {
     public function chat(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
-
         if (strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['success' => false, 'message' => 'Método no permitido.']);
-            return;
+            $this->fail(405, 'Método no permitido.');
         }
 
         if (!Csrf::validate($_SERVER['HTTP_X_CSRF_TOKEN'] ?? null)) {
-            http_response_code(419);
-            echo json_encode(['success' => false, 'message' => 'La sesión expiró. Recarga la página.'], JSON_UNESCAPED_UNICODE);
-            return;
+            $this->fail(419, 'La sesión expiró. Recarga la página.');
         }
 
         $token = Auth::check() ? Auth::token() : null;
@@ -23,15 +17,31 @@ class AssistantController extends Controller
         session_write_close();
 
         $input = json_decode((string) file_get_contents('php://input'), true);
-        $response = (new MicroserviceClient())->post(
+        ServiceRuntime::startStream();
+
+        // Se reenvía tal cual lo que manda el servicio, sin esperar a que termine.
+        $error = (new MicroserviceClient())->stream(
             'assistant',
-            'chat',
+            'chat/stream',
             ['messages' => is_array($input['messages'] ?? null) ? $input['messages'] : []],
             $token,
-            (float) config('app.llm.timeout', 120) + 10
+            (float) config('app.llm.timeout', 180) + 10,
+            function (string $chunk): void {
+                echo $chunk;
+                flush();
+            }
         );
-        unset($response['_status']);
 
-        echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($error !== null) {
+            ServiceRuntime::streamEvent(['type' => 'error', 'message' => $error]);
+        }
+    }
+
+    private function fail(int $status, string $message): never
+    {
+        http_response_code($status);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['success' => false, 'message' => $message], JSON_UNESCAPED_UNICODE);
+        exit;
     }
 }

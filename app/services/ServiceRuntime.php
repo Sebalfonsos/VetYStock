@@ -55,6 +55,26 @@ class ServiceRuntime
         exit;
     }
 
+    public static function startStream(): void
+    {
+        header('Content-Type: application/x-ndjson; charset=utf-8');
+        header('Cache-Control: no-cache');
+        header('X-Accel-Buffering: no');
+        if (function_exists('apache_setenv')) {
+            apache_setenv('no-gzip', '1');
+        }
+        while (ob_get_level() > 0) {
+            ob_end_flush();
+        }
+        ob_implicit_flush(true);
+    }
+
+    public static function streamEvent(array $event): void
+    {
+        echo json_encode($event, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), "\n";
+        flush();
+    }
+
     public static function bearerToken(): ?string
     {
         $header = (string) ($_SERVER['HTTP_AUTHORIZATION'] ?? '');

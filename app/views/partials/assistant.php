@@ -5,6 +5,8 @@
     #assistant-messages { overflow-y: auto; }
     .assistant-msg { max-width: 88%; white-space: pre-wrap; word-wrap: break-word; }
     .assistant-msg.user { margin-left: auto; }
+    .assistant-msg.streaming::after { content: '▍'; animation: assistant-blink 1s steps(1) infinite; }
+    @keyframes assistant-blink { 50% { opacity: 0; } }
 </style>
 
 <button id="assistant-toggle" type="button" class="btn btn-success rounded-circle shadow" aria-controls="assistant-panel" aria-expanded="false" title="Asistente veterinario">
@@ -52,26 +54,49 @@
     const format = (text) => escapeHtml(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/^#{1,4}\s*/gm, '').replace(/^&gt;\s?/gm, '');
     const money = (value) => '$' + Math.round(value).toLocaleString('es-CO');
 
+    function addProducts(div, products) {
+        if (!products.length) return;
+        const box = document.createElement('div');
+        box.className = 'mt-2 pt-2 border-top small';
+        box.style.whiteSpace = 'normal';
+        box.innerHTML = '<div class="fw-semibold mb-1">Disponible en el catálogo</div>' + products.map((p) =>
+            '<div class="d-flex justify-content-between gap-2"><span>' + escapeHtml(p.name) + '</span>'
+            + '<span class="text-nowrap ' + (p.stock > 0 ? 'text-success' : 'text-danger') + '">'
+            + (p.stock > 0 ? p.stock + ' und · ' + money(p.price) : 'Agotado') + '</span></div>'
+        ).join('');
+        div.appendChild(box);
+    }
+
     function bubble(role, text, products = [], isError = false) {
         const div = document.createElement('div');
         div.className = 'assistant-msg rounded-3 px-3 py-2 ' + (role === 'user' ? 'user bg-success text-white' : (isError ? 'bg-warning-subtle' : 'bg-light border'));
         div.innerHTML = format(text);
-
-        if (products.length) {
-            const box = document.createElement('div');
-            box.className = 'mt-2 pt-2 border-top small';
-            box.style.whiteSpace = 'normal';
-            box.innerHTML = '<div class="fw-semibold mb-1">Disponible en el catálogo</div>' + products.map((p) =>
-                '<div class="d-flex justify-content-between gap-2"><span>' + escapeHtml(p.name) + '</span>'
-                + '<span class="text-nowrap ' + (p.stock > 0 ? 'text-success' : 'text-danger') + '">'
-                + (p.stock > 0 ? p.stock + ' und · ' + money(p.price) : 'Agotado') + '</span></div>'
-            ).join('');
-            div.appendChild(box);
-        }
-
+        addProducts(div, products);
         list.appendChild(div);
         list.scrollTop = list.scrollHeight;
         return div;
+    }
+
+    // Solo baja el scroll si el usuario ya estaba abajo, para no arrastrarlo si subió a leer.
+    function followScroll(update) {
+        const atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 60;
+        update();
+        if (atBottom) list.scrollTop = list.scrollHeight;
+    }
+
+    async function readStream(response, onEvent) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let pending = '';
+        while (true) {
+            const { value, done } = await reader.read();
+            pending += decoder.decode(value || new Uint8Array(), { stream: !done });
+            const lines = pending.split('\n');
+            pending = lines.pop();
+            lines.filter((line) => line.trim()).forEach((line) => onEvent(JSON.parse(line)));
+            if (done) break;
+        }
+        if (pending.trim()) onEvent(JSON.parse(pending));
     }
 
     function renderAll() {
@@ -100,7 +125,19 @@
         bubble('user', text);
         input.value = '';
         input.disabled = send.disabled = true;
-        const typing = bubble('assistant', 'Revisando el catálogo... (puede tardar hasta un minuto)');
+        const reply = bubble('assistant', 'Revisando el catálogo...');
+        reply.classList.add('text-muted', 'streaming');
+        let streamed = '';
+        let final = null;
+        let failure = null;
+
+        const fail = (message) => {
+            reply.remove();
+            history.pop();
+            save();
+            bubble('assistant', message, [], true);
+            input.value = text;
+        };
 
         try {
             const response = await fetch(endpoint, {
@@ -108,26 +145,41 @@
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
                 body: JSON.stringify({ messages: history.map(({ role, content }) => ({ role, content })) }),
             });
-            const result = await response.json();
-            typing.remove();
 
-            if (result.success) {
-                const products = result.data.products || [];
-                history.push({ role: 'assistant', content: result.data.reply, products });
-                save();
-                bubble('assistant', result.data.reply, products);
-            } else {
-                history.pop();
-                save();
-                bubble('assistant', result.message || 'No se pudo obtener respuesta.', [], true);
-                input.value = text;
+            if (!response.ok || !response.body) {
+                const result = await response.json().catch(() => ({}));
+                throw new Error(result.message || 'No se pudo conectar con el asistente.');
             }
-        } catch (error) {
-            typing.remove();
-            history.pop();
+
+            await readStream(response, (event) => {
+                if (event.type === 'thinking' && !streamed) {
+                    reply.innerHTML = format('Pensando...');
+                } else if (event.type === 'delta') {
+                    if (!streamed) reply.classList.remove('text-muted');
+                    streamed += event.text;
+                    followScroll(() => { reply.innerHTML = format(streamed.replace(/^\s+/, '')); });
+                } else if (event.type === 'done') {
+                    final = event;
+                } else if (event.type === 'error') {
+                    failure = event.message;
+                }
+            });
+
+            reply.classList.remove('streaming');
+            if (!final) {
+                fail(failure || 'La respuesta se interrumpió. Intenta de nuevo.');
+                return;
+            }
+
+            const products = final.products || [];
+            followScroll(() => {
+                reply.innerHTML = format(final.reply);
+                addProducts(reply, products);
+            });
+            history.push({ role: 'assistant', content: final.reply, products });
             save();
-            bubble('assistant', 'No se pudo conectar con el asistente.', [], true);
-            input.value = text;
+        } catch (error) {
+            fail(error.message || 'No se pudo conectar con el asistente.');
         } finally {
             input.disabled = send.disabled = false;
             input.focus();

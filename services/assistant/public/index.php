@@ -23,6 +23,16 @@ if ($method === 'POST' && $route === 'chat') {
     ServiceRuntime::json($service->chat(ServiceRuntime::body()));
 }
 
+if ($method === 'POST' && $route === 'chat/stream') {
+    $body = ServiceRuntime::body();
+    ServiceRuntime::startStream();
+    $result = $service->chat($body, fn (string $type, string $text) => ServiceRuntime::streamEvent(['type' => $type, 'text' => $text]));
+    ServiceRuntime::streamEvent(($result['success'] ?? false)
+        ? ['type' => 'done'] + $result['data']
+        : ['type' => 'error', 'message' => $result['message'] ?? 'No se pudo obtener respuesta.']);
+    exit;
+}
+
 ServiceRuntime::json([
     'success' => false,
     'message' => 'Ruta no encontrada',

@@ -15,7 +15,8 @@ class AssistantService
         'wild' => 'fauna silvestre',
     ];
 
-    public function chat(array $input): array
+    // $onEvent recibe ('thinking'|'delta', $texto) mientras el modelo genera.
+    public function chat(array $input, ?callable $onEvent = null): array
     {
         $messages = $this->cleanMessages($input['messages'] ?? []);
         if (!$messages || end($messages)['role'] !== 'user') {
@@ -35,7 +36,7 @@ class AssistantService
         $reply = $this->complete(array_merge(
             [['role' => 'system', 'content' => $this->systemPrompt($products)]],
             $messages
-        ));
+        ), $onEvent);
 
         if ($reply === null) {
             return ['success' => false, 'message' => 'El asistente no está disponible. Verifica que LM Studio esté encendido con el modelo cargado.'];
@@ -48,10 +49,15 @@ class AssistantService
             'products' => array_column($mentioned, 'name'),
         ]);
 
+        $final = $this->ensureDisclaimer($reply, $mentioned);
+        if ($onEvent && $final !== $reply) {
+            $onEvent('delta', substr($final, strlen($reply)));
+        }
+
         return [
             'success' => true,
             'data' => [
-                'reply' => $this->ensureDisclaimer($reply, $mentioned),
+                'reply' => $final,
                 'products' => $mentioned,
             ],
         ];
@@ -112,34 +118,60 @@ class AssistantService
             . implode("\n", $lines);
     }
 
-    private function complete(array $messages): ?string
+    private function complete(array $messages, ?callable $onEvent): ?string
     {
-        $body = json_encode([
-            'model' => config('app.llm.model'),
-            'messages' => $messages,
-            'temperature' => 0.3,
-            'max_tokens' => 2500,
-            'stream' => false,
-        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $content = '';
+        $pending = '';
+        $thinking = false;
 
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'POST',
-                'header' => "Content-Type: application/json\r\nAccept: application/json",
-                'content' => $body,
-                'timeout' => (float) config('app.llm.timeout', 120),
-                'ignore_errors' => true,
-            ],
+        // Siempre se pide en streaming; si nadie escucha los eventos, simplemente se acumula el texto.
+        $handleLine = function (string $line) use (&$content, &$thinking, $onEvent): void {
+            if (!str_starts_with($line, 'data:')) {
+                return;
+            }
+            $delta = json_decode(trim(substr($line, 5)), true)['choices'][0]['delta'] ?? [];
+
+            if (($delta['content'] ?? '') !== '') {
+                $content .= $delta['content'];
+                $onEvent && $onEvent('delta', $delta['content']);
+            } elseif (!$thinking && (($delta['reasoning'] ?? '') !== '' || ($delta['reasoning_content'] ?? '') !== '')) {
+                $thinking = true;
+                $onEvent && $onEvent('thinking', '');
+            }
+        };
+
+        $curl = curl_init(rtrim((string) config('app.llm.base_url'), '/') . '/chat/completions');
+        curl_setopt_array($curl, [
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Accept: text/event-stream'],
+            CURLOPT_POSTFIELDS => json_encode([
+                'model' => config('app.llm.model'),
+                'messages' => $messages,
+                'temperature' => 0.3,
+                'max_tokens' => 2500,
+                'stream' => true,
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => (int) config('app.llm.timeout', 180),
+            CURLOPT_WRITEFUNCTION => function ($curl, string $chunk) use (&$pending, $handleLine): int {
+                $pending .= $chunk;
+                while (($position = strpos($pending, "\n")) !== false) {
+                    $handleLine(trim(substr($pending, 0, $position)));
+                    $pending = substr($pending, $position + 1);
+                }
+                return strlen($chunk);
+            },
         ]);
 
-        $url = rtrim((string) config('app.llm.base_url'), '/') . '/chat/completions';
-        $response = @file_get_contents($url, false, $context);
-        if ($response === false) {
+        $ok = curl_exec($curl);
+        $status = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+        curl_close($curl);
+
+        if (!$ok || $status !== 200) {
             return null;
         }
 
-        $content = json_decode($response, true)['choices'][0]['message']['content'] ?? null;
-        return is_string($content) && trim($content) !== '' ? trim($content) : null;
+        return trim($content) !== '' ? trim($content) : null;
     }
 
     private function mentionedProducts(string $reply, array $products): array

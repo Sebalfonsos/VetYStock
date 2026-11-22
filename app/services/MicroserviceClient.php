@@ -22,6 +22,38 @@ class MicroserviceClient
         return $this->request('DELETE', $service, $route, null, $token);
     }
 
+    // Envía un POST y entrega cada pedazo de la respuesta a $onChunk apenas llega. Devuelve null o un mensaje de error.
+    public function stream(string $service, string $route, array $payload, ?string $token, float $timeout, callable $onChunk): ?string
+    {
+        $baseUrl = rtrim((string) config('app.services.' . $service, ''), '/');
+        if ($baseUrl === '') {
+            return 'Servicio no configurado.';
+        }
+
+        $curl = curl_init($baseUrl . '/?' . http_build_query(['route' => $route]));
+        curl_setopt_array($curl, [
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => $this->buildHeaders(['Accept: application/x-ndjson', 'Content-Type: application/json'], $token),
+            CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            CURLOPT_CONNECTTIMEOUT => 3,
+            CURLOPT_TIMEOUT => (int) $timeout,
+            CURLOPT_WRITEFUNCTION => function ($curl, string $chunk) use ($onChunk): int {
+                $onChunk($chunk);
+                return strlen($chunk);
+            },
+        ]);
+
+        $ok = curl_exec($curl);
+        $status = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+        curl_close($curl);
+
+        if (!$ok) {
+            return 'No se pudo conectar con ' . $service . '.';
+        }
+
+        return $status === 200 ? null : 'Respuesta inválida de ' . $service . '.';
+    }
+
     private function request(string $method, string $service, string $route, ?array $payload, ?string $token, ?float $timeout = null, array $query = []): array
     {
         $baseUrl = rtrim((string) config('app.services.' . $service, ''), '/');
