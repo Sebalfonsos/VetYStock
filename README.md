@@ -9,7 +9,57 @@ Proyecto académico MVC en `PHP 8.2 + MySQL 8 + Apache/XAMPP + Bootstrap 5`.
 - Apache/XAMPP
 - GitHub
 
-## Acceso local
+## Arranque con Docker (recomendado)
+
+Solo necesitas Docker Desktop. Cada microservicio corre en su propio contenedor:
+
+| Contenedor | Qué es | URL en tu equipo |
+|---|---|---|
+| `main` | Proyecto principal | `http://localhost:8000` |
+| `auth` | Autenticación, usuarios y roles | `http://localhost:8101/?route=health` |
+| `catalog` | Categorías y productos | `http://localhost:8102/?route=health` |
+| `inventory` | Movimientos de stock y alertas | `http://localhost:8103/?route=health` |
+| `animals` | Animales, propietarios y especies | `http://localhost:8104/?route=health` |
+| `db` | MySQL 8.4 con `database/schema.sql` | `localhost:3307` (usuario `root`) |
+
+1. Levantar todo:
+   ```bash
+   docker compose up -d --build
+   ```
+2. Ver el estado de los contenedores:
+   ```bash
+   docker compose ps
+   ```
+3. Abrir `http://localhost:8000` e iniciar sesión con las credenciales de prueba.
+4. Apagar todo:
+   ```bash
+   docker compose down
+   ```
+   Para borrar también los datos y volver a cargar `database/schema.sql` desde cero:
+   ```bash
+   docker compose down -v
+   ```
+
+Para cambiar la contraseña de MySQL o el secreto de los tokens, copia `.env.example` como `.env` y edita los valores.
+
+### Cómo demostrar que son microservicios en Docker
+
+1. Ver en vivo las peticiones que el proyecto principal le hace a cada servicio:
+   ```bash
+   docker compose logs -f auth catalog inventory animals
+   ```
+   Al abrir el dashboard aparecen líneas como `GET /?route=products`, que vienen del contenedor `main`.
+2. Apagar un servicio y recargar el dashboard o el inventario:
+   ```bash
+   docker compose stop catalog
+   ```
+   El resto del sistema sigue funcionando, los datos de ese servicio bajan a `0` y el inventario muestra el aviso "No se pudo conectar con catalog".
+3. Volver a encenderlo:
+   ```bash
+   docker compose start catalog
+   ```
+
+## Acceso local (sin Docker)
 
 1. Crear la base de datos `laudi`
 2. Importar `database/schema.sql`
@@ -124,7 +174,7 @@ El proyecto ya queda preparado para ejecutar estos 4 servicios independientes:
 - Abrir `http://localhost:8000/index.php?route=dashboard/index` después de iniciar sesión
 - Verás que esas pantallas leen datos desde los servicios `auth`, `catalog`, `inventory` y `animals`
 - Si detienes un servicio, su bloque de datos baja a `0` o devuelve error controlado
-- También puedes abrir DevTools y ver las llamadas HTTP a `8101`, `8102`, `8103` y `8104`
+- Las llamadas a `8101`, `8102`, `8103` y `8104` las hace el servidor PHP, no el navegador, así que no aparecen en DevTools
 
 ## Flujo Git sugerido
 
