@@ -20,6 +20,7 @@ function Get-ServiceMap {
         health = @{ Name = 'health'; Port = 8106 }
         notifications = @{ Name = 'notifications'; Port = 8107 }
         reports = @{ Name = 'reports'; Port = 8108 }
+        cart = @{ Name = 'cart'; Port = 8109 }
     }
 }
 

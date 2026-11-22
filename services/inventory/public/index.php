@@ -28,7 +28,8 @@ if (!$claims) {
     ServiceRuntime::json(['success' => false, 'message' => 'Token inválido o expirado.'], 401);
 }
 
-$userId = (int) ($claims['sub'] ?? 0);
+// Los tokens de sistema (sub 0) no son un usuario real; el movimiento queda sin responsable.
+$userId = (int) ($claims['sub'] ?? 0) ?: null;
 
 if ($method === 'GET' && $route === 'movements') {
     ServiceRuntime::json($service->movements());

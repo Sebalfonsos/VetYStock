@@ -30,7 +30,7 @@ class InventoryService
         ];
     }
 
-    public function createMovement(array $input, int $userId): array
+    public function createMovement(array $input, ?int $userId): array
     {
         $productId = (int) ($input['product_id'] ?? 0);
         $movementType = trim((string) ($input['movement_type'] ?? ''));

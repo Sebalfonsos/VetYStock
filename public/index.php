@@ -44,6 +44,8 @@ $controllerMap = [
     'medical-history' => MedicalHistoryController::class,
     'notifications' => NotificationController::class,
     'reports' => ReportController::class,
+    'cart' => CartController::class,
+    'orders' => OrderController::class,
 ];
 
 $controllerClass = $controllerMap[$controllerSlug] ?? (studly($controllerSlug) . 'Controller');
@@ -63,7 +65,7 @@ if (!method_exists($controller, $action)) {
 }
 
 if (!Auth::check() && $route !== config('app.login_route') && $route !== 'auth/authenticate') {
-    $publicRoutes = ['home/index', 'home/catalog', 'home/contact', 'home/about', 'api/products', 'assistant/chat', 'auth/login', 'auth/authenticate'];
+    $publicRoutes = ['home/index', 'home/catalog', 'home/contact', 'home/about', 'api/products', 'assistant/chat', 'cart/index', 'cart/items', 'cart/add', 'cart/update', 'cart/remove', 'cart/clear', 'cart/checkout', 'auth/login', 'auth/authenticate'];
     if (!in_array($route, $publicRoutes, true)) {
         redirect('auth/login');
     }

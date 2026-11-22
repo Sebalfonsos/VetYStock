@@ -24,6 +24,12 @@
         <i class="bi bi-bell me-2"></i>Notificaciones
         <span id="notifications-badge" class="badge rounded-pill bg-danger ms-auto" hidden></span>
     </a>
+    <a class="nav-link rounded" href="<?= e(url('orders/index')) ?>"><i class="bi bi-receipt me-2"></i>Pedidos</a>
+    <a class="nav-link rounded d-flex align-items-center" href="<?= e(url('cart/index')) ?>">
+        <i class="bi bi-cart3 me-2"></i>Carrito
+        <span class="cart-count badge rounded-pill bg-success ms-auto" hidden></span>
+    </a>
+    <a class="nav-link rounded" href="<?= e(url('home/catalog')) ?>"><i class="bi bi-shop me-2"></i>Tienda</a>
     <?php if (Auth::role() === 'Administrador'): ?>
         <a class="nav-link rounded" href="<?= e(url('reports/index')) ?>"><i class="bi bi-bar-chart-line me-2"></i>Reportes</a>
     <?php endif; ?>

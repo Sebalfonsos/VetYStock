@@ -47,9 +47,28 @@ foreach ($products as $product) {
                                 <div class="fw-semibold"><?= e($product['current_stock']) ?></div>
                             </div>
                         </div>
+                        <?php if ((int) $product['current_stock'] > 0 && ($product['status'] ?? 'active') === 'active'): ?>
+                            <div class="d-flex gap-2 mt-3">
+                                <input type="number" class="form-control form-control-sm cart-qty" style="width:5rem" min="1" max="<?= e($product['current_stock']) ?>" value="1" aria-label="Cantidad de <?= e($product['name']) ?>">
+                                <button type="button" class="btn btn-sm btn-success flex-grow-1 cart-add" data-product="<?= e($product['id']) ?>">
+                                    <i class="bi bi-cart-plus"></i> Agregar al carrito
+                                </button>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
         <?php endforeach; ?>
     </div>
 <?php endforeach; ?>
+
+<script>
+document.querySelectorAll('.cart-add').forEach((button) => {
+    button.addEventListener('click', async () => {
+        const quantity = parseInt(button.parentElement.querySelector('.cart-qty').value, 10) || 1;
+        button.disabled = true;
+        await window.VetCart.add([{ product_id: Number(button.dataset.product), quantity }]);
+        button.disabled = false;
+    });
+});
+</script>

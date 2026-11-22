@@ -28,6 +28,7 @@ x-php-service: &php-service
     HEALTH_SERVICE_URL: http://health
     NOTIFICATIONS_SERVICE_URL: http://notifications
     REPORTS_SERVICE_URL: http://reports
+    CART_SERVICE_URL: http://cart
 
 services:
   db:
@@ -75,6 +76,8 @@ services:
       notifications:
         condition: service_started
       reports:
+        condition: service_started
+      cart:
         condition: service_started
 
   auth:
@@ -156,6 +159,14 @@ services:
       APP_DOCROOT: /var/www/html/services/reports/public
     ports:
       - "8108:80"
+
+  cart:
+    <<: *php-service
+    environment:
+      <<: *php-env
+      APP_DOCROOT: /var/www/html/services/cart/public
+    ports:
+      - "8109:80"
 
 volumes:
   db-data:

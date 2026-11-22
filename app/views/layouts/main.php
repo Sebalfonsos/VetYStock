@@ -32,6 +32,12 @@ $pageTitle = ($title ?? 'Laudi') . ' | ' . config('app.name');
                 <li class="nav-item"><a class="nav-link" href="<?= e(url('home/catalog')) ?>">Tienda</a></li>
                 <li class="nav-item"><a class="nav-link" href="<?= e(url('home/about')) ?>">Nosotros</a></li>
                 <li class="nav-item"><a class="nav-link" href="<?= e(url('home/contact')) ?>">Contacto</a></li>
+                <li class="nav-item">
+                    <a class="nav-link position-relative" href="<?= e(url('cart/index')) ?>" title="Carrito">
+                        <i class="bi bi-cart3"></i> Carrito
+                        <span class="cart-count badge rounded-pill bg-success" hidden></span>
+                    </a>
+                </li>
                 <li class="nav-item"><a class="btn btn-outline-light ms-lg-2" href="<?= e(url('auth/login')) ?>">Ingresar</a></li>
             </ul>
         </div>
@@ -73,6 +79,7 @@ $pageTitle = ($title ?? 'Laudi') . ' | ' . config('app.name');
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<?php require __DIR__ . '/../partials/cart.php'; ?>
 <?php require __DIR__ . '/../partials/assistant.php'; ?>
 </body>
 </html>

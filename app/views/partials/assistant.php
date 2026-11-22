@@ -56,14 +56,33 @@
 
     function addProducts(div, products) {
         if (!products.length) return;
+        const available = products.filter((p) => p.id && p.stock > 0);
         const box = document.createElement('div');
         box.className = 'mt-2 pt-2 border-top small';
         box.style.whiteSpace = 'normal';
         box.innerHTML = '<div class="fw-semibold mb-1">Disponible en el catálogo</div>' + products.map((p) =>
-            '<div class="d-flex justify-content-between gap-2"><span>' + escapeHtml(p.name) + '</span>'
-            + '<span class="text-nowrap ' + (p.stock > 0 ? 'text-success' : 'text-danger') + '">'
-            + (p.stock > 0 ? p.stock + ' und · ' + money(p.price) : 'Agotado') + '</span></div>'
-        ).join('');
+            '<div class="d-flex justify-content-between align-items-center gap-2 mb-1"><span>' + escapeHtml(p.name) + '</span>'
+            + '<span class="d-flex align-items-center gap-2 text-nowrap"><span class="' + (p.stock > 0 ? 'text-success' : 'text-danger') + '">'
+            + (p.stock > 0 ? p.stock + ' und · ' + money(p.price) : 'Agotado') + '</span>'
+            + (p.id && p.stock > 0 ? '<button type="button" class="btn btn-sm btn-outline-success py-0 px-1" data-cart="' + Number(p.id) + '" title="Agregar ' + escapeHtml(p.name) + ' al carrito"><i class="bi bi-cart-plus"></i></button>' : '')
+            + '</span></div>'
+        ).join('')
+            + (available.length > 1 ? '<button type="button" class="btn btn-sm btn-success w-100 mt-1" data-cart-all><i class="bi bi-cart-plus"></i> Agregar todos al carrito</button>' : '');
+
+        const mark = (buttons) => buttons.forEach((b) => { b.classList.replace('btn-outline-success', 'btn-success'); b.innerHTML = '<i class="bi bi-cart-check"></i>'; });
+        box.querySelectorAll('[data-cart]').forEach((button) => button.addEventListener('click', async () => {
+            button.disabled = true;
+            const result = await window.VetCart.add([{ product_id: Number(button.dataset.cart), quantity: 1 }]);
+            button.disabled = false;
+            if (result.success) mark([button]);
+        }));
+        const all = box.querySelector('[data-cart-all]');
+        if (all) all.addEventListener('click', async () => {
+            all.disabled = true;
+            const result = await window.VetCart.add(available.map((p) => ({ product_id: p.id, quantity: 1 })));
+            all.disabled = false;
+            if (result.success) mark([...box.querySelectorAll('[data-cart]')].filter((b) => result.added.includes(Number(b.dataset.cart))));
+        });
         div.appendChild(box);
     }
 

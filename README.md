@@ -25,6 +25,7 @@ Solo necesitas Docker Desktop. Cada microservicio corre en su propio contenedor:
 | `notifications` | Avisos de vacunas, controles y stock bajo | `http://localhost:8107/?route=health` |
 | `notifications-worker` | Revisa cada 5 minutos si hay avisos nuevos (sin puerto) | `docker compose logs -f notifications-worker` |
 | `reports` | Reportes exportables y bitácora de auditoría | `http://localhost:8108/?route=health` |
+| `cart` | Carrito de compras y pedidos | `http://localhost:8109/?route=health` |
 | `db` | MySQL 8.4 con `database/schema.sql` | `localhost:3307` (usuario `root`) |
 
 1. Levantar todo:
@@ -89,6 +90,18 @@ Solo el rol Administrador ve el menú "Reportes". Incluye cinco reportes, todos 
 - Bitácora del sistema: quién hizo qué, cuándo y desde qué IP.
 
 Todos los servicios envían sus registros de auditoría a `reports`. Si ese servicio está apagado, las operaciones siguen funcionando pero esas acciones no quedan en la bitácora.
+
+### Carrito y pedidos (`cart`)
+
+Cualquier visitante, con o sin sesión, puede armar un carrito:
+
+- En la Tienda, cada producto con existencias tiene "Agregar al carrito" con su cantidad.
+- En el chat, cada producto recomendado tiene un botón para agregarlo y, si son varios, "Agregar todos al carrito".
+- El menú muestra cuántas unidades hay en el carrito.
+
+Precios y existencias siempre se consultan al catálogo en el momento; no se confía en lo que manda el navegador. No se puede pedir más de lo que hay en stock.
+
+Al confirmar el pedido (nombre y teléfono, pago al recoger o recibir), el servicio le pide a `inventory` descontar cada producto con la referencia `PED-<número>`. Si alguno falla, devuelve lo ya descontado y el pedido no se crea. El personal ve los pedidos en el menú "Pedidos" y los marca como entregados o los cancela; al cancelar, los productos vuelven al inventario.
 
 ### Cómo demostrar que son microservicios en Docker
 
@@ -215,6 +228,7 @@ El proyecto ya queda preparado para ejecutar estos 8 servicios independientes:
 - Health: `treatments`, `vaccines`, `observations`, `history`, `upcoming` (piden token)
 - Notifications: `notifications`, `notifications/count`, `notifications/{id}/read`, `notifications/read-all`, `scan` (piden token)
 - Reports: `audit`, `reports/inventory`, `reports/movements`, `reports/animal-history`, `reports/consultations`, `reports/audit` (piden token; los reportes, rol Administrador)
+- Cart: `cart/{llave}`, `cart/{llave}/items`, `cart/{llave}/items/{producto}`, `cart/{llave}/checkout`, `orders`, `orders/{id}/status` (piden token; los pedidos, un usuario con sesión)
 
 Sin Docker, el worker de notificaciones se arranca aparte con `php services/notifications/worker.php`.
 

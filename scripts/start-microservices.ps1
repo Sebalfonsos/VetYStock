@@ -22,6 +22,7 @@ function Get-ServiceMap {
         health = @{ Name = 'health'; Port = 8106; Path = Join-Path $root 'services\health\public' }
         notifications = @{ Name = 'notifications'; Port = 8107; Path = Join-Path $root 'services\notifications\public' }
         reports = @{ Name = 'reports'; Port = 8108; Path = Join-Path $root 'services\reports\public' }
+        cart = @{ Name = 'cart'; Port = 8109; Path = Join-Path $root 'services\cart\public' }
     }
 }
 
