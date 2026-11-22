@@ -49,7 +49,7 @@
     const save = () => { try { sessionStorage.setItem(storageKey, JSON.stringify(history)); } catch (e) {} };
 
     const escapeHtml = (text) => text.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    const format = (text) => escapeHtml(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/^#{1,4}\s*/gm, '');
+    const format = (text) => escapeHtml(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/^#{1,4}\s*/gm, '').replace(/^&gt;\s?/gm, '');
     const money = (value) => '$' + Math.round(value).toLocaleString('es-CO');
 
     function bubble(role, text, products = [], isError = false) {
