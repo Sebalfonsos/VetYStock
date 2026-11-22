@@ -20,6 +20,7 @@ Solo necesitas Docker Desktop. Cada microservicio corre en su propio contenedor:
 | `catalog` | Categorías y productos | `http://localhost:8102/?route=health` |
 | `inventory` | Movimientos de stock y alertas | `http://localhost:8103/?route=health` |
 | `animals` | Animales, propietarios y especies | `http://localhost:8104/?route=health` |
+| `assistant` | Asistente veterinario con IA local | `http://localhost:8105/?route=health` |
 | `db` | MySQL 8.4 con `database/schema.sql` | `localhost:3307` (usuario `root`) |
 
 1. Levantar todo:
@@ -40,7 +41,24 @@ Solo necesitas Docker Desktop. Cada microservicio corre en su propio contenedor:
    docker compose down -v
    ```
 
-Para cambiar la contraseña de MySQL o el secreto de los tokens, copia `.env.example` como `.env` y edita los valores.
+Para cambiar la contraseña de MySQL, el secreto de los tokens o el modelo de IA, copia `.env.example` como `.env` y edita los valores.
+
+### Asistente veterinario (LM Studio)
+
+El botón de chat abajo a la derecha, en todas las páginas, habla con el contenedor `assistant`. Ese servicio:
+
+1. Pide el catálogo en vivo al servicio `catalog` (nombres, descripción, precio y unidades disponibles).
+2. Se lo entrega al modelo junto con las instrucciones de `services/assistant/prompt.md`.
+3. Le pregunta al modelo que corre en LM Studio, en tu equipo, fuera de Docker.
+4. Detecta qué productos reales del catálogo nombró la respuesta y los muestra con su stock y precio.
+5. Si la respuesta recomienda algo y el modelo olvidó el aviso con el número de contacto, lo agrega.
+
+Requisitos en LM Studio:
+
+- Cargar el modelo `qwen2.5-7b-instruct` (o el que pongas en `LLM_MODEL`).
+- En la pestaña Developer, encender el servidor en el puerto `1234`.
+
+Si LM Studio está apagado, el chat responde "El asistente no está disponible" y el resto del sistema sigue funcionando. Cada respuesta tarda entre 10 y 50 segundos según tu tarjeta gráfica.
 
 ### Cómo demostrar que son microservicios en Docker
 
@@ -110,7 +128,6 @@ Para cambiar la contraseña de MySQL o el secreto de los tokens, copia `.env.exa
 
 - `GET /public/index.php?route=api/products`
 - Respuesta JSON con todos los productos y su categoría
-- Útil para consumo desde un chatbot externo
 
 ## Microservicios
 

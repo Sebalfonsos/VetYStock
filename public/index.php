@@ -61,7 +61,7 @@ if (!method_exists($controller, $action)) {
 }
 
 if (!Auth::check() && $route !== config('app.login_route') && $route !== 'auth/authenticate') {
-    $publicRoutes = ['home/index', 'home/catalog', 'home/contact', 'home/about', 'api/products', 'auth/login', 'auth/authenticate'];
+    $publicRoutes = ['home/index', 'home/catalog', 'home/contact', 'home/about', 'api/products', 'assistant/chat', 'auth/login', 'auth/authenticate'];
     if (!in_array($route, $publicRoutes, true)) {
         redirect('auth/login');
     }

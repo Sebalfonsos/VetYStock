@@ -16,6 +16,7 @@ function Get-ServiceMap {
         catalog = @{ Name = 'catalog'; Port = 8102 }
         inventory = @{ Name = 'inventory'; Port = 8103 }
         animals = @{ Name = 'animals'; Port = 8104 }
+        assistant = @{ Name = 'assistant'; Port = 8105 }
     }
 }
 

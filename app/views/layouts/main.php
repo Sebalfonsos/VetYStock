@@ -73,9 +73,6 @@ $pageTitle = ($title ?? 'Laudi') . ' | ' . config('app.name');
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<?php if (!Auth::check()): ?>
-<script src="https://cdn.botpress.cloud/webchat/v3.6/inject.js"></script>
-<script src="https://files.bpcontent.cloud/2026/06/12/18/20260612182458-IZQ1YWST.js" defer></script>
-<?php endif; ?>
+<?php require __DIR__ . '/../partials/assistant.php'; ?>
 </body>
 </html>

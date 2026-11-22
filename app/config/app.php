@@ -12,5 +12,11 @@ return [
         'catalog' => getenv('CATALOG_SERVICE_URL') ?: 'http://localhost:8102',
         'inventory' => getenv('INVENTORY_SERVICE_URL') ?: 'http://localhost:8103',
         'animals' => getenv('ANIMALS_SERVICE_URL') ?: 'http://localhost:8104',
+        'assistant' => getenv('ASSISTANT_SERVICE_URL') ?: 'http://localhost:8105',
+    ],
+    'llm' => [
+        'base_url' => getenv('LLM_BASE_URL') ?: 'http://localhost:1234/v1',
+        'model' => getenv('LLM_MODEL') ?: 'qwen2.5-7b-instruct',
+        'timeout' => (float) (getenv('LLM_TIMEOUT') ?: 120),
     ],
 ];

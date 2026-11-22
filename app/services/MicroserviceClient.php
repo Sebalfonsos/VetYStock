@@ -7,12 +7,12 @@ class MicroserviceClient
         return $this->request('GET', $service, $route, null, $token);
     }
 
-    public function post(string $service, string $route, array $payload = [], ?string $token = null): array
+    public function post(string $service, string $route, array $payload = [], ?string $token = null, ?float $timeout = null): array
     {
-        return $this->request('POST', $service, $route, $payload, $token);
+        return $this->request('POST', $service, $route, $payload, $token, $timeout);
     }
 
-    private function request(string $method, string $service, string $route, ?array $payload, ?string $token): array
+    private function request(string $method, string $service, string $route, ?array $payload, ?string $token, ?float $timeout = null): array
     {
         $baseUrl = rtrim((string) config('app.services.' . $service, ''), '/');
         if ($baseUrl === '') {
@@ -28,6 +28,10 @@ class MicroserviceClient
                 'ignore_errors' => true,
             ],
         ];
+
+        if ($timeout !== null) {
+            $options['http']['timeout'] = $timeout;
+        }
 
         if ($payload !== null) {
             $body = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

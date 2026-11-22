@@ -24,6 +24,7 @@ x-php-service: &php-service
     CATALOG_SERVICE_URL: http://catalog
     INVENTORY_SERVICE_URL: http://inventory
     ANIMALS_SERVICE_URL: http://animals
+    ASSISTANT_SERVICE_URL: http://assistant
 
 services:
   db:
@@ -64,6 +65,8 @@ services:
         condition: service_started
       animals:
         condition: service_started
+      assistant:
+        condition: service_started
 
   auth:
     <<: *php-service
@@ -96,6 +99,20 @@ services:
       APP_DOCROOT: /var/www/html/services/animals/public
     ports:
       - "8104:80"
+
+  assistant:
+    <<: *php-service
+    environment:
+      <<: *php-env
+      APP_DOCROOT: /var/www/html/services/assistant/public
+      # LM Studio corre en el equipo anfitrión, fuera de Docker.
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://host.docker.internal:1234/v1}
+      LLM_MODEL: ${LLM_MODEL:-qwen2.5-7b-instruct}
+      LLM_TIMEOUT: ${LLM_TIMEOUT:-120}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8105:80"
 
 volumes:
   db-data:
