@@ -55,10 +55,10 @@ El botón de chat abajo a la derecha, en todas las páginas, habla con el conten
 
 Requisitos en LM Studio:
 
-- Cargar el modelo `qwen2.5-7b-instruct` (o el que pongas en `LLM_MODEL`).
+- Cargar el modelo `openai/gpt-oss-20b` (o el que pongas en `LLM_MODEL`).
 - En la pestaña Developer, encender el servidor en el puerto `1234`.
 
-Si LM Studio está apagado, el chat responde "El asistente no está disponible" y el resto del sistema sigue funcionando. Cada respuesta tarda entre 10 y 50 segundos según tu tarjeta gráfica.
+Si LM Studio está apagado, el chat responde "El asistente no está disponible" y el resto del sistema sigue funcionando. Con `openai/gpt-oss-20b` cada respuesta tarda entre 15 y 60 segundos según tu tarjeta gráfica; `qwen2.5-7b-instruct` es más rápido pero recomienda peor.
 
 ### Cómo demostrar que son microservicios en Docker
 

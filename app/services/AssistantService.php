@@ -113,7 +113,7 @@ class AssistantService
             'model' => config('app.llm.model'),
             'messages' => $messages,
             'temperature' => 0.3,
-            'max_tokens' => 900,
+            'max_tokens' => 2500,
             'stream' => false,
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 

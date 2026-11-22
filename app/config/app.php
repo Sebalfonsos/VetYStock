@@ -16,7 +16,7 @@ return [
     ],
     'llm' => [
         'base_url' => getenv('LLM_BASE_URL') ?: 'http://localhost:1234/v1',
-        'model' => getenv('LLM_MODEL') ?: 'qwen2.5-7b-instruct',
-        'timeout' => (float) (getenv('LLM_TIMEOUT') ?: 120),
+        'model' => getenv('LLM_MODEL') ?: 'openai/gpt-oss-20b',
+        'timeout' => (float) (getenv('LLM_TIMEOUT') ?: 180),
     ],
 ];

@@ -100,7 +100,7 @@
         bubble('user', text);
         input.value = '';
         input.disabled = send.disabled = true;
-        const typing = bubble('assistant', 'Revisando el catálogo...');
+        const typing = bubble('assistant', 'Revisando el catálogo... (puede tardar hasta un minuto)');
 
         try {
             const response = await fetch(endpoint, {
