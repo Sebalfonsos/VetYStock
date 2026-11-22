@@ -2,11 +2,10 @@
 
 return [
     'driver' => 'mysql',
-    'host' => '127.0.0.1',
-    'port' => '3306',
-    'database' => 'laudi',
-    'username' => 'root',
-    'password' => 'root',
+    'host' => getenv('DB_HOST') ?: '127.0.0.1',
+    'port' => getenv('DB_PORT') ?: '3306',
+    'database' => getenv('DB_DATABASE') ?: 'laudi',
+    'username' => getenv('DB_USERNAME') ?: 'root',
+    'password' => getenv('DB_PASSWORD') ?: 'root',
     'charset' => 'utf8mb4',
 ];
-

@@ -6,11 +6,11 @@ return [
     'timezone' => 'America/Bogota',
     'default_route' => 'home/index',
     'login_route' => 'auth/login',
-    'service_secret' => 'change-me-in-production',
+    'service_secret' => getenv('SERVICE_SECRET') ?: 'change-me-in-production',
     'services' => [
-        'auth' => 'http://localhost:8101',
-        'catalog' => 'http://localhost:8102',
-        'inventory' => 'http://localhost:8103',
-        'animals' => 'http://localhost:8104',
+        'auth' => getenv('AUTH_SERVICE_URL') ?: 'http://localhost:8101',
+        'catalog' => getenv('CATALOG_SERVICE_URL') ?: 'http://localhost:8102',
+        'inventory' => getenv('INVENTORY_SERVICE_URL') ?: 'http://localhost:8103',
+        'animals' => getenv('ANIMALS_SERVICE_URL') ?: 'http://localhost:8104',
     ],
 ];
