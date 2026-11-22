@@ -64,4 +64,29 @@ class ServiceRuntime
 
         return null;
     }
+
+    public static function claims(): ?array
+    {
+        $token = self::bearerToken();
+        return $token ? ServiceToken::validate($token) : null;
+    }
+
+    public static function requireClaims(): array
+    {
+        if (!self::bearerToken()) {
+            self::json(['success' => false, 'message' => 'Token requerido.'], 401);
+        }
+
+        $claims = self::claims();
+        if (!$claims) {
+            self::json(['success' => false, 'message' => 'Token inválido o expirado.'], 401);
+        }
+
+        return $claims;
+    }
+
+    public static function systemToken(string $name): string
+    {
+        return ServiceToken::issue(['sub' => 0, 'role' => 'system', 'name' => $name], 300);
+    }
 }

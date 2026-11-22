@@ -25,6 +25,9 @@ x-php-service: &php-service
     INVENTORY_SERVICE_URL: http://inventory
     ANIMALS_SERVICE_URL: http://animals
     ASSISTANT_SERVICE_URL: http://assistant
+    HEALTH_SERVICE_URL: http://health
+    NOTIFICATIONS_SERVICE_URL: http://notifications
+    REPORTS_SERVICE_URL: http://reports
 
 services:
   db:
@@ -66,6 +69,12 @@ services:
       animals:
         condition: service_started
       assistant:
+        condition: service_started
+      health:
+        condition: service_started
+      notifications:
+        condition: service_started
+      reports:
         condition: service_started
 
   auth:
@@ -113,6 +122,40 @@ services:
       - "host.docker.internal:host-gateway"
     ports:
       - "8105:80"
+
+  health:
+    <<: *php-service
+    environment:
+      <<: *php-env
+      APP_DOCROOT: /var/www/html/services/health/public
+    ports:
+      - "8106:80"
+
+  notifications:
+    <<: *php-service
+    environment:
+      <<: *php-env
+      APP_DOCROOT: /var/www/html/services/notifications/public
+      NOTIFICATIONS_DAYS: ${NOTIFICATIONS_DAYS:-7}
+    ports:
+      - "8107:80"
+
+  # Revisa vacunas, controles y stock bajo cada NOTIFICATIONS_INTERVAL segundos, sin que nadie lo llame.
+  notifications-worker:
+    <<: *php-service
+    command: ["php", "/var/www/html/services/notifications/worker.php"]
+    environment:
+      <<: *php-env
+      NOTIFICATIONS_INTERVAL: ${NOTIFICATIONS_INTERVAL:-300}
+      NOTIFICATIONS_DAYS: ${NOTIFICATIONS_DAYS:-7}
+
+  reports:
+    <<: *php-service
+    environment:
+      <<: *php-env
+      APP_DOCROOT: /var/www/html/services/reports/public
+    ports:
+      - "8108:80"
 
 volumes:
   db-data:

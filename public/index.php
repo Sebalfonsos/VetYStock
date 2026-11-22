@@ -42,6 +42,8 @@ $controllerMap = [
     'vaccines' => VaccineController::class,
     'observations' => ObservationController::class,
     'medical-history' => MedicalHistoryController::class,
+    'notifications' => NotificationController::class,
+    'reports' => ReportController::class,
 ];
 
 $controllerClass = $controllerMap[$controllerSlug] ?? (studly($controllerSlug) . 'Controller');

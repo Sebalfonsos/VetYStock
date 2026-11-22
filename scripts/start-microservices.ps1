@@ -19,6 +19,9 @@ function Get-ServiceMap {
         inventory = @{ Name = 'inventory'; Port = 8103; Path = Join-Path $root 'services\inventory\public' }
         animals = @{ Name = 'animals'; Port = 8104; Path = Join-Path $root 'services\animals\public' }
         assistant = @{ Name = 'assistant'; Port = 8105; Path = Join-Path $root 'services\assistant\public' }
+        health = @{ Name = 'health'; Port = 8106; Path = Join-Path $root 'services\health\public' }
+        notifications = @{ Name = 'notifications'; Port = 8107; Path = Join-Path $root 'services\notifications\public' }
+        reports = @{ Name = 'reports'; Port = 8108; Path = Join-Path $root 'services\reports\public' }
     }
 }
 

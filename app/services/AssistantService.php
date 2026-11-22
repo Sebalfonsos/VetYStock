@@ -43,6 +43,11 @@ class AssistantService
 
         $mentioned = $this->mentionedProducts($reply, $products);
 
+        Logger::audit('consultation', 'assistant', null, [
+            'question' => mb_substr(end($messages)['content'], 0, 500),
+            'products' => array_column($mentioned, 'name'),
+        ]);
+
         return [
             'success' => true,
             'data' => [

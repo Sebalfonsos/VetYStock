@@ -2,9 +2,9 @@
 
 class MicroserviceClient
 {
-    public function get(string $service, string $route, ?string $token = null): array
+    public function get(string $service, string $route, ?string $token = null, array $query = []): array
     {
-        return $this->request('GET', $service, $route, null, $token);
+        return $this->request('GET', $service, $route, null, $token, null, $query);
     }
 
     public function post(string $service, string $route, array $payload = [], ?string $token = null, ?float $timeout = null): array
@@ -12,14 +12,24 @@ class MicroserviceClient
         return $this->request('POST', $service, $route, $payload, $token, $timeout);
     }
 
-    private function request(string $method, string $service, string $route, ?array $payload, ?string $token, ?float $timeout = null): array
+    public function put(string $service, string $route, array $payload = [], ?string $token = null): array
+    {
+        return $this->request('PUT', $service, $route, $payload, $token);
+    }
+
+    public function delete(string $service, string $route, ?string $token = null): array
+    {
+        return $this->request('DELETE', $service, $route, null, $token);
+    }
+
+    private function request(string $method, string $service, string $route, ?array $payload, ?string $token, ?float $timeout = null, array $query = []): array
     {
         $baseUrl = rtrim((string) config('app.services.' . $service, ''), '/');
         if ($baseUrl === '') {
             return ['success' => false, 'message' => 'Servicio no configurado.'];
         }
 
-        $url = $baseUrl . '/?route=' . rawurlencode($route);
+        $url = $baseUrl . '/?' . http_build_query(['route' => $route] + $query);
         $headers = ['Accept: application/json'];
         $options = [
             'http' => [
@@ -69,6 +79,15 @@ class MicroserviceClient
     {
         if ($token !== null && $token !== '') {
             $headers[] = 'Authorization: Bearer ' . $token;
+        }
+
+        // Para que la bitácora de cada servicio registre al usuario real y no al contenedor que hace la llamada.
+        $clientIp = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? null;
+        if ($clientIp !== null) {
+            $headers[] = 'X-Forwarded-For: ' . preg_replace('/[^0-9a-fA-F.:, ]/', '', (string) $clientIp);
+        }
+        if (isset($_SERVER['HTTP_USER_AGENT'])) {
+            $headers[] = 'User-Agent: ' . str_replace(["\r", "\n"], '', (string) $_SERVER['HTTP_USER_AGENT']);
         }
 
         return $headers;

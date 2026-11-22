@@ -34,7 +34,26 @@ class Auth
 
     public static function token(): ?string
     {
-        return $_SESSION['service_token'] ?? null;
+        $token = $_SESSION['service_token'] ?? null;
+        if ($token !== null && ServiceToken::validate($token)) {
+            return $token;
+        }
+
+        $user = self::user();
+        if (!$user) {
+            return null;
+        }
+
+        // El token dura 1 hora y la sesión más; se renueva aquí para que los servicios no respondan 401.
+        $token = ServiceToken::issue([
+            'sub' => (int) $user['id'],
+            'role' => self::role(),
+            'name' => $user['name'] ?? '',
+            'email' => $user['email'] ?? '',
+        ]);
+        $_SESSION['service_token'] = $token;
+
+        return $token;
     }
 
     public static function logout(): void
@@ -45,7 +64,7 @@ class Auth
 
     public static function role(): string
     {
-        return self::user()['role_name'] ?? 'Invitado';
+        return self::user()['role'] ?? self::user()['role_name'] ?? 'Invitado';
     }
 }
 

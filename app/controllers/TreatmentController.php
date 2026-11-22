@@ -2,7 +2,7 @@
 
 class TreatmentController extends CrudController
 {
-    protected string $modelClass = Treatment::class;
+    protected string $modelClass = TreatmentResource::class;
     protected string $viewFolder = 'treatments';
     protected string $title = 'Tratamientos';
     protected array $fillable = ['animal_id', 'user_id', 'treatment_date', 'diagnosis', 'procedure_desc', 'medication', 'dosage', 'notes', 'next_control_date'];

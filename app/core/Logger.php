@@ -2,23 +2,29 @@
 
 class Logger
 {
-    public static function audit(string $action, string $entity, ?int $entityId = null, array $details = []): void
+    public static function audit(string $action, string $entity, ?int $entityId = null, array $details = [], ?int $userId = null): void
     {
-        try {
-            $pdo = Database::pdo();
-            $stmt = $pdo->prepare('INSERT INTO audit_logs (user_id, action, entity, entity_id, details, ip_address, user_agent, created_at) VALUES (:user_id, :action, :entity, :entity_id, :details, :ip_address, :user_agent, NOW())');
-            $stmt->execute([
-                'user_id' => Auth::id(),
-                'action' => $action,
-                'entity' => $entity,
-                'entity_id' => $entityId,
-                'details' => json_encode($details, JSON_UNESCAPED_UNICODE),
-                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1',
-                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'CLI',
-            ]);
-        } catch (Throwable) {
-            // Se ignora para no romper la experiencia de demo.
+        $userId ??= Auth::id() ?? self::userFromToken();
+
+        $response = (new MicroserviceClient())->post('reports', 'audit', [
+            'user_id' => $userId ?: null,
+            'action' => $action,
+            'entity' => $entity,
+            'entity_id' => $entityId,
+            'details' => $details,
+            'ip_address' => $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1',
+            'user_agent' => mb_substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? 'CLI'), 0, 255),
+        ], ServiceRuntime::systemToken('logger'), 2);
+
+        // La bitácora no debe romper la operación principal si el servicio de reportes está apagado.
+        if (!($response['success'] ?? false)) {
+            error_log('Auditoría no registrada (' . $action . ' ' . $entity . '): ' . ($response['message'] ?? 'sin respuesta'));
         }
     }
-}
 
+    private static function userFromToken(): ?int
+    {
+        $sub = (int) (ServiceRuntime::claims()['sub'] ?? 0);
+        return $sub > 0 ? $sub : null;
+    }
+}

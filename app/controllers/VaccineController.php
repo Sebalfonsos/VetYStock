@@ -2,7 +2,7 @@
 
 class VaccineController extends CrudController
 {
-    protected string $modelClass = Vaccine::class;
+    protected string $modelClass = VaccineResource::class;
     protected string $viewFolder = 'vaccines';
     protected string $title = 'Vacunas';
     protected array $fillable = ['animal_id', 'user_id', 'vaccine_name', 'application_date', 'next_due_date', 'batch', 'notes'];

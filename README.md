@@ -21,6 +21,10 @@ Solo necesitas Docker Desktop. Cada microservicio corre en su propio contenedor:
 | `inventory` | Movimientos de stock y alertas | `http://localhost:8103/?route=health` |
 | `animals` | Animales, propietarios y especies | `http://localhost:8104/?route=health` |
 | `assistant` | Asistente veterinario con IA local | `http://localhost:8105/?route=health` |
+| `health` | Tratamientos, vacunas, observaciones e historial médico | `http://localhost:8106/?route=health` |
+| `notifications` | Avisos de vacunas, controles y stock bajo | `http://localhost:8107/?route=health` |
+| `notifications-worker` | Revisa cada 5 minutos si hay avisos nuevos (sin puerto) | `docker compose logs -f notifications-worker` |
+| `reports` | Reportes exportables y bitácora de auditoría | `http://localhost:8108/?route=health` |
 | `db` | MySQL 8.4 con `database/schema.sql` | `localhost:3307` (usuario `root`) |
 
 1. Levantar todo:
@@ -60,6 +64,32 @@ Requisitos en LM Studio:
 
 Si LM Studio está apagado, el chat responde "El asistente no está disponible" y el resto del sistema sigue funcionando. Con `openai/gpt-oss-20b` cada respuesta tarda entre 15 y 60 segundos según tu tarjeta gráfica; `qwen2.5-7b-instruct` es más rápido pero recomienda peor.
 
+### Salud animal (`health`)
+
+Las pantallas de Tratamientos, Vacunas, Observaciones e Historial médico ya no tocan la base de datos: todo pasa por este servicio. El historial médico se puede filtrar por tipo de registro y rango de fechas, y muestra el responsable de cada evento.
+
+### Notificaciones (`notifications` y `notifications-worker`)
+
+El worker revisa cada 5 minutos (`NOTIFICATIONS_INTERVAL`, en segundos):
+
+- vacunas cuya próxima dosis vence en los próximos 7 días o ya venció (`NOTIFICATIONS_DAYS`),
+- controles de tratamientos en el mismo plazo,
+- alertas de stock bajo del inventario.
+
+Cada evento genera un solo aviso, aunque se revise muchas veces. Los avisos aparecen en el menú "Notificaciones" con un contador; el botón "Revisar ahora" lanza la revisión sin esperar al worker. Los avisos son de la finca, no de cada usuario: si uno los marca como leídos, quedan leídos para todos.
+
+### Reportes y bitácora (`reports`)
+
+Solo el rol Administrador ve el menú "Reportes". Incluye cinco reportes, todos exportables a CSV (se abre en Excel):
+
+- Inventario actual, filtrable por categoría.
+- Movimientos de inventario, por fechas y tipo.
+- Historial por animal, por fechas y tipo de registro.
+- Consultas al asistente: qué preguntó cada usuario y qué productos se le sugirieron.
+- Bitácora del sistema: quién hizo qué, cuándo y desde qué IP.
+
+Todos los servicios envían sus registros de auditoría a `reports`. Si ese servicio está apagado, las operaciones siguen funcionando pero esas acciones no quedan en la bitácora.
+
 ### Cómo demostrar que son microservicios en Docker
 
 1. Ver en vivo las peticiones que el proyecto principal le hace a cada servicio:
@@ -75,6 +105,10 @@ Si LM Studio está apagado, el chat responde "El asistente no está disponible" 
 3. Volver a encenderlo:
    ```bash
    docker compose start catalog
+   ```
+4. Ver el worker de notificaciones trabajando solo:
+   ```bash
+   docker compose logs -f notifications-worker
    ```
 
 ## Acceso local (sin Docker)
@@ -131,12 +165,16 @@ Si LM Studio está apagado, el chat responde "El asistente no está disponible" 
 
 ## Microservicios
 
-El proyecto ya queda preparado para ejecutar estos 4 servicios independientes:
+El proyecto ya queda preparado para ejecutar estos 8 servicios independientes:
 
 - **Auth**: autenticación, usuarios y roles
 - **Catalog**: categorías y productos
 - **Inventory**: movimientos de stock y alertas
 - **Animals**: animales, propietarios y especies
+- **Assistant**: asistente veterinario con IA local
+- **Health**: tratamientos, vacunas, observaciones e historial médico
+- **Notifications**: avisos de vacunas, controles y stock bajo
+- **Reports**: reportes y bitácora de auditoría
 
 ### Arranque local
 
@@ -173,6 +211,12 @@ El proyecto ya queda preparado para ejecutar estos 4 servicios independientes:
 - Catalog: `categories`, `products`
 - Inventory: `movements`, `alerts`
 - Animals: `animals`, `owners`, `species`
+- Assistant: `chat`
+- Health: `treatments`, `vaccines`, `observations`, `history`, `upcoming` (piden token)
+- Notifications: `notifications`, `notifications/count`, `notifications/{id}/read`, `notifications/read-all`, `scan` (piden token)
+- Reports: `audit`, `reports/inventory`, `reports/movements`, `reports/animal-history`, `reports/consultations`, `reports/audit` (piden token; los reportes, rol Administrador)
+
+Sin Docker, el worker de notificaciones se arranca aparte con `php services/notifications/worker.php`.
 
 ### Ejemplos rápidos
 

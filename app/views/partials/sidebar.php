@@ -20,5 +20,25 @@
     <a class="nav-link rounded" href="<?= e(url('treatments/index')) ?>"><i class="bi bi-clipboard2-pulse me-2"></i>Tratamientos</a>
     <a class="nav-link rounded" href="<?= e(url('vaccines/index')) ?>"><i class="bi bi-virus me-2"></i>Vacunas</a>
     <a class="nav-link rounded" href="<?= e(url('medical-history/index')) ?>"><i class="bi bi-file-medical me-2"></i>Historial médico</a>
+    <a class="nav-link rounded d-flex align-items-center" href="<?= e(url('notifications/index')) ?>">
+        <i class="bi bi-bell me-2"></i>Notificaciones
+        <span id="notifications-badge" class="badge rounded-pill bg-danger ms-auto" hidden></span>
+    </a>
+    <?php if (Auth::role() === 'Administrador'): ?>
+        <a class="nav-link rounded" href="<?= e(url('reports/index')) ?>"><i class="bi bi-bar-chart-line me-2"></i>Reportes</a>
+    <?php endif; ?>
 </nav>
+
+<script>
+fetch(<?= json_encode(url('notifications/count')) ?>)
+    .then((response) => response.json())
+    .then((result) => {
+        const badge = document.getElementById('notifications-badge');
+        if (result.unread > 0) {
+            badge.textContent = result.unread;
+            badge.hidden = false;
+        }
+    })
+    .catch(() => {});
+</script>
 

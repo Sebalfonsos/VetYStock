@@ -18,9 +18,14 @@ abstract class CrudController extends Controller
         AuthMiddleware::handle();
         $model = new $this->modelClass();
         $query = trim((string) ($_GET['q'] ?? ''));
-        $items = $query !== '' && $this->searchable
-            ? $model->search($this->searchable, $query)
-            : $model->all($this->orderBy);
+        try {
+            $items = $query !== '' && $this->searchable
+                ? $model->search($this->searchable, $query)
+                : $model->all($this->orderBy);
+        } catch (ServiceException $exception) {
+            $items = [];
+            Session::setFlash('error', $exception->getMessage());
+        }
 
         $this->render($this->viewFolder . '/index', [
             'title' => $this->title,
@@ -80,7 +85,13 @@ abstract class CrudController extends Controller
             redirect($this->viewFolder . '/create');
         }
 
-        $id = (new $this->modelClass())->create($data);
+        try {
+            $id = (new $this->modelClass())->create($data);
+        } catch (ServiceException $exception) {
+            Session::setOld($data);
+            Session::setFlash('error', $exception->getMessage());
+            redirect($this->viewFolder . '/create');
+        }
         Logger::audit('create', $this->viewFolder, $id, $data);
         Session::clearOld();
         Session::setFlash('success', 'Registro creado correctamente.');
@@ -99,7 +110,13 @@ abstract class CrudController extends Controller
             redirect($this->viewFolder . '/edit&id=' . $id);
         }
 
-        (new $this->modelClass())->update($id, $data);
+        try {
+            (new $this->modelClass())->update($id, $data);
+        } catch (ServiceException $exception) {
+            Session::setOld($data);
+            Session::setFlash('error', $exception->getMessage());
+            redirect($this->viewFolder . '/edit&id=' . $id);
+        }
         Logger::audit('update', $this->viewFolder, $id, $data);
         Session::clearOld();
         Session::setFlash('success', 'Registro actualizado correctamente.');
@@ -117,7 +134,12 @@ abstract class CrudController extends Controller
             Logger::audit('deactivate', $this->viewFolder, $id, ['status' => 'inactive']);
             Session::setFlash('success', 'Registro desactivado correctamente.');
         } else {
-            $model->delete($id);
+            try {
+                $model->delete($id);
+            } catch (ServiceException $exception) {
+                Session::setFlash('error', $exception->getMessage());
+                redirect($this->viewFolder . '/index');
+            }
             Logger::audit('delete', $this->viewFolder, $id);
             Session::setFlash('success', 'Registro eliminado correctamente.');
         }

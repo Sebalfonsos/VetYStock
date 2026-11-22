@@ -34,7 +34,7 @@ class AuthService
             'email' => $user['email'],
         ]);
 
-        Logger::audit('login', 'auth', (int) $user['id'], ['email' => $email]);
+        Logger::audit('login', 'auth', (int) $user['id'], ['email' => $email], (int) $user['id']);
 
         return [
             'success' => true,

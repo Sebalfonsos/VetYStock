@@ -2,7 +2,7 @@
 
 class ObservationController extends CrudController
 {
-    protected string $modelClass = Observation::class;
+    protected string $modelClass = ObservationResource::class;
     protected string $viewFolder = 'observations';
     protected string $title = 'Observaciones';
     protected array $fillable = ['animal_id', 'user_id', 'observation_date', 'description'];

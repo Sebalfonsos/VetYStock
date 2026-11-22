@@ -18,6 +18,7 @@ class AssistantController extends Controller
             return;
         }
 
+        $token = Auth::check() ? Auth::token() : null;
         // El modelo puede tardar; sin esto la sesión queda bloqueada y el usuario no puede navegar mientras espera.
         session_write_close();
 
@@ -26,7 +27,7 @@ class AssistantController extends Controller
             'assistant',
             'chat',
             ['messages' => is_array($input['messages'] ?? null) ? $input['messages'] : []],
-            null,
+            $token,
             (float) config('app.llm.timeout', 120) + 10
         );
         unset($response['_status']);
